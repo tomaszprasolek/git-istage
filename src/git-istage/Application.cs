@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Xml.Linq;
 using LibGit2Sharp;
@@ -37,69 +38,40 @@ namespace GitIStage
 
         public void Run()
         {
-            _commands = new[]
-            {
-                new ConsoleCommand(Exit, ConsoleKey.Escape, "Return to command line."),
-                new ConsoleCommand(Exit, ConsoleKey.Q, "Return to command line."),
-                new ConsoleCommand(Commit, ConsoleKey.C, "Author commit"),
-                new ConsoleCommand(CommitAmend, ConsoleKey.C, ConsoleModifiers.Alt, "Authors commit with --amend option"),
-                new ConsoleCommand(Stash, ConsoleKey.S, ConsoleModifiers.Alt, "Stashes changes from the working copy, but leaves the stage as-is."),
-                new ConsoleCommand(ToggleBetweenWorkingDirectoryAndStaging, ConsoleKey.T, "Toggle between working copy changes and staged changes."),
-                new ConsoleCommand(IncreaseContext, ConsoleKey.OemPlus, "Increases the number of contextual lines."),
-                new ConsoleCommand(DecreaseContext, ConsoleKey.OemMinus, "Decreases the number of contextual lines."),
-                new ConsoleCommand(ToogleFullDiff, ConsoleKey.Oem7, "Toggles between standard diff and full diff"),
-                new ConsoleCommand(ToggleWhitespace, ConsoleKey.W, "Toggles between showing and hiding whitespace."),
-                new ConsoleCommand(GoHome, ConsoleKey.Home, "Selects the first line."),
-                new ConsoleCommand(GoHomeOrInputLine, ConsoleKey.G, "Selects the first line (or Line N)."),
-                new ConsoleCommand(GoEnd, ConsoleKey.End, "Selects the last line."),
-                new ConsoleCommand(GoEndOrInputLine, ConsoleKey.G, ConsoleModifiers.Shift, "Selects the last line (or Line N)."),
-                new ConsoleCommand(SelectUp, ConsoleKey.UpArrow, "Selects the previous line."),
-                new ConsoleCommand(SelectUp, ConsoleKey.K, "Selects the previous line."),
-                new ConsoleCommand(SelectDown, ConsoleKey.DownArrow, "Selects the next line."),
-                new ConsoleCommand(SelectDown, ConsoleKey.J, "Selects the next line."),
-                new ConsoleCommand(ScrollUp, ConsoleKey.UpArrow, ConsoleModifiers.Control, "Scrolls up by one line."),
-                new ConsoleCommand(ScrollDown, ConsoleKey.DownArrow, ConsoleModifiers.Control, "Scrolls down by one line."),
-                new ConsoleCommand(ScrollPageUp, ConsoleKey.PageUp, "Selects the line one screen above."),
-                new ConsoleCommand(ScrollPageDown, ConsoleKey.PageDown, "Selects the line one screen below."),
-                new ConsoleCommand(ScrollPageDown, ConsoleKey.Spacebar, "Selects the line one screen below."),
-                new ConsoleCommand(ScrollLeft, ConsoleKey.LeftArrow, ConsoleModifiers.Control, "Scrolls left by one character."),
-                new ConsoleCommand(ScrollRight, ConsoleKey.RightArrow, ConsoleModifiers.Control, "Scrolls right by one character."),
-                new ConsoleCommand(GoPreviousFile, ConsoleKey.LeftArrow, "Go to the previous file."),
-                new ConsoleCommand(GoNextFile, ConsoleKey.RightArrow, "Go to the next file."),
-                new ConsoleCommand(GoPreviousHunk, ConsoleKey.Oem4, "Go to previous change block."),
-                new ConsoleCommand(GoNextHunk, ConsoleKey.Oem6, "Go to next change block."),
-                new ConsoleCommand(Reset, ConsoleKey.R, "When viewing the working copy, removes the selected line from the working copy."),
-                new ConsoleCommand(ResetHunk, ConsoleKey.R, ConsoleModifiers.Shift, "When viewing the working copy, removes the selected block from the working copy."),
-                new ConsoleCommand(Stage, ConsoleKey.S, "When viewing the working copy, stages the selected line."),
-                new ConsoleCommand(StageHunk, ConsoleKey.S, ConsoleModifiers.Shift, "When viewing the working copy, stages the selected block."),
-                new ConsoleCommand(Unstage, ConsoleKey.U, "When viewing the stage, unstages the selected line."),
-                new ConsoleCommand(UnstageHunk, ConsoleKey.U, ConsoleModifiers.Shift, "When viewing the stage, unstages the selected block."),
-                new ConsoleCommand(RemoveLastLineDigit, ConsoleKey.Backspace, "Remove last line digit"),
-                new ConsoleCommand(AppendLineDigit0, ConsoleKey.D0, "Append digit 0 to line."),
-                new ConsoleCommand(AppendLineDigit1, ConsoleKey.D1, "Append digit 1 to line."),
-                new ConsoleCommand(AppendLineDigit2, ConsoleKey.D2, "Append digit 2 to line."),
-                new ConsoleCommand(AppendLineDigit3, ConsoleKey.D3, "Append digit 3 to line."),
-                new ConsoleCommand(AppendLineDigit4, ConsoleKey.D4, "Append digit 4 to line."),
-                new ConsoleCommand(AppendLineDigit5, ConsoleKey.D5, "Append digit 5 to line."),
-                new ConsoleCommand(AppendLineDigit6, ConsoleKey.D6, "Append digit 6 to line."),
-                new ConsoleCommand(AppendLineDigit7, ConsoleKey.D7, "Append digit 7 to line."),
-                new ConsoleCommand(AppendLineDigit8, ConsoleKey.D8, "Append digit 8 to line."),
-                new ConsoleCommand(AppendLineDigit9, ConsoleKey.D9, "Append digit 9 to line."),
-                new ConsoleCommand(ShowHelpPage, ConsoleKey.F1, "Show / hide help page"),
-                new ConsoleCommand(ShowHelpPage, ConsoleKey.Oem2, ConsoleModifiers.Shift, "Show / hide help page")
-            };
+            XDocument xdoc = XDocument.Load(@"C:\Tomek\git_istage_key_bindings.xml");
+            List<XElement> xmlCommands = xdoc.Root.Elements("Command").ToList();
+            int count = xmlCommands.Count();
 
-            XDocument xdoc = new XDocument(new XElement("ROOT"));
-            foreach (ConsoleCommand command in _commands)
+            _commands = new ConsoleCommand[count];
+
+            for (int i = 0; i < count; i++)
             {
-                xdoc.Root.Add(new XElement("Command",
-                    new XAttribute("Name", command.Handler.Method.Name),
-                    new XAttribute("ConsoleKeyId", (int)command.Key),
-                    new XAttribute("ConsoleModifiersId", (int)command.Modifiers),
-                    new XAttribute("Description", command.Description)
-                    ));
+                string name = xmlCommands[i].Attribute("Name").Value;
+                int consoleKeyId = Convert.ToInt32(xmlCommands[i].Attribute("ConsoleKeyId").Value);
+                int consoleModifiersId = Convert.ToInt32(xmlCommands[i].Attribute("ConsoleModifiersId").Value);
+                string description = xmlCommands[i].Attribute("Description").Value;
+
+                Type thisType = GetType();
+                MethodInfo theMethod = thisType.GetMethod(name, BindingFlags.NonPublic | BindingFlags.Instance);
+                Action action = () => theMethod.Invoke(this, null);
+
+                if (consoleModifiersId == 0)
+                    _commands[i] = new ConsoleCommand(action, (ConsoleKey)consoleKeyId, description);
+                else
+                    _commands[i] = new ConsoleCommand(action, (ConsoleKey)consoleKeyId, (ConsoleModifiers)consoleModifiersId, description);
             }
-            xdoc.Save(@"C:\Tomek\git_istage_key_bindings.xml");
+
+            //XDocument xdoc = new XDocument(new XElement("ROOT"));
+            //foreach (ConsoleCommand command in _commands)
+            //{
+            //    xdoc.Root.Add(new XElement("Command",
+            //        new XAttribute("Name", command.Handler.Method.Name),
+            //        new XAttribute("ConsoleKeyId", (int)command.Key),
+            //        new XAttribute("ConsoleModifiersId", (int)command.Modifiers),
+            //        new XAttribute("Description", command.Description)
+            //        ));
+            //}
+            //xdoc.Save(@"C:\Tomek\git_istage_key_bindings.xml");
 
             Console.CursorVisible = false;
             Console.Clear();
