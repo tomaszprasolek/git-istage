@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-
+using System.Xml.Linq;
 using LibGit2Sharp;
 
 namespace GitIStage
@@ -88,6 +88,18 @@ namespace GitIStage
                 new ConsoleCommand(ShowHelpPage, ConsoleKey.F1, "Show / hide help page"),
                 new ConsoleCommand(ShowHelpPage, ConsoleKey.Oem2, ConsoleModifiers.Shift, "Show / hide help page")
             };
+
+            XDocument xdoc = new XDocument(new XElement("ROOT"));
+            foreach (ConsoleCommand command in _commands)
+            {
+                xdoc.Root.Add(new XElement("Command",
+                    new XAttribute("Name", command.Handler.Method.Name),
+                    new XAttribute("ConsoleKeyId", (int)command.Key),
+                    new XAttribute("ConsoleModifiersId", (int)command.Modifiers),
+                    new XAttribute("Description", command.Description)
+                    ));
+            }
+            xdoc.Save(@"C:\Tomek\git_istage_key_bindings.xml");
 
             Console.CursorVisible = false;
             Console.Clear();

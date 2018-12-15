@@ -4,49 +4,49 @@ namespace GitIStage
 {
     internal sealed class ConsoleCommand
     {
-        private readonly Action _handler;
-        private readonly ConsoleKey _key;
+        public readonly Action Handler;
+        public readonly ConsoleKey Key;
         public readonly string Description;
-        private readonly ConsoleModifiers _modifiers;
+        public readonly ConsoleModifiers Modifiers;
 
         public ConsoleCommand(Action handler, ConsoleKey key, string description)
         {
-            _handler = handler;
-            _key = key;
+            Handler = handler;
+            Key = key;
             Description = description;
-            _modifiers = 0;
+            Modifiers = 0;
         }
 
         public ConsoleCommand(Action handler, ConsoleKey key, ConsoleModifiers modifiers, string description)
         {
-            _handler = handler;
-            _key = key;
-            _modifiers = modifiers;
+            Handler = handler;
+            Key = key;
+            Modifiers = modifiers;
 
             Description = description;
         }
 
         public void Execute()
         {
-            _handler();
+            Handler();
         }
 
         public bool MatchesKey(ConsoleKeyInfo keyInfo)
         {
-            return _key == keyInfo.Key && _modifiers == keyInfo.Modifiers;
+            return Key == keyInfo.Key && Modifiers == keyInfo.Modifiers;
         }
 
         public string GetCommandShortcut()
         {
             string key = string.Empty;
 
-            switch (_key)
+            switch (Key)
             {
                 case ConsoleKey.UpArrow:
                 case ConsoleKey.DownArrow:
                 case ConsoleKey.LeftArrow:
                 case ConsoleKey.RightArrow:
-                    key = _key.ToString().Replace("Arrow", "");
+                    key = Key.ToString().Replace("Arrow", "");
                     break;
                 case ConsoleKey.OemPlus:
                     key = "+";
@@ -73,18 +73,18 @@ namespace GitIStage
                 case ConsoleKey.D7:
                 case ConsoleKey.D8:
                 case ConsoleKey.D9:
-                    key = _key.ToString().Replace("D", "");
+                    key = Key.ToString().Replace("D", "");
                     break;
                 default:
-                    key = _key.ToString();
+                    key = Key.ToString();
                     break;
             }
 
-            if (_key == ConsoleKey.Oem2 && _modifiers == ConsoleModifiers.Shift)
+            if (Key == ConsoleKey.Oem2 && Modifiers == ConsoleModifiers.Shift)
                 return "?";
 
-            if (_modifiers != 0)
-                return $"{_modifiers.ToString().Replace("Control", "Ctrl")} + {key}";
+            if (Modifiers != 0)
+                return $"{Modifiers.ToString().Replace("Control", "Ctrl")} + {key}";
             else
                 return key;
         }
